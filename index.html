@@ -2,25 +2,8 @@
 <html>
 <head>
   <title>Online Voting System</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-  <h1>Online Voting System</h1>
-
-  <div class="container">
-    <h2>Add Candidate</h2>
-    <input type="text" id="name" placeholder="Candidate Name">
-    <input type="text" id="party" placeholder="Party">
-    <button onclick="addCandidate()">Add</button>
-
-    <h2>Vote</h2>
-    <div id="candidates"></div>
-
-    <h2>Results</h2>
-    <div id="results"></div>
-  </div>
-    body {
+  <style>
+   body {
   font-family: Arial;
   background: #f4f4f4;
   text-align: center;
@@ -52,6 +35,25 @@ button {
   padding: 10px;
   margin: 5px;
 }
+    </style>
+</head>
+<body>
+
+  <h1>Online Voting System</h1>
+
+  <div class="container">
+    <h2>Add Candidate</h2>
+    <input type="text" id="name" placeholder="Candidate Name">
+    <input type="text" id="party" placeholder="Party">
+    <button onclick="addCandidate()">Add</button>
+
+    <h2>Vote</h2>
+    <div id="candidates"></div>
+
+    <h2>Results</h2>
+    <div id="results"></div>
+  </div>
+ 
     let candidates = JSON.parse(localStorage.getItem("candidates")) || [];
 let voted = localStorage.getItem("voted") || false;
 
