@@ -1,209 +1,121 @@
-online-voting-system/
-│── config/
-│   └── db.php
-│
-│── public/
-│   ├── index.php
-│   ├── login.php
-│   ├── register.php
-│   ├── vote.php
-│   ├── result.php
-│   └── logout.php
-│
-│── admin/
-│   └── dashboard.php
-│
-│── assets/
-│   ├── css/style.css
-│   └── js/script.js
-│
-│── sql/
-│   └── database.sql
-│
-│── README.md
-│── .gitignore
-<?php
-$host = "localhost";
-$db = "online_voting";
-$user = "root";
-$pass = "";
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Online Voting System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-try {
-    $conn = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-    die("DB Error: " . $e->getMessage());
-}
-?>
-CREATE DATABASE online_voting;
-USE online_voting;
+  <h1>Online Voting System</h1>
 
-CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100),
-    email VARCHAR(100) UNIQUE,
-    password VARCHAR(255),
-    role ENUM('voter','admin') DEFAULT 'voter',
-    has_voted BOOLEAN DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+  <div class="container">
+    <h2>Add Candidate</h2>
+    <input type="text" id="name" placeholder="Candidate Name">
+    <input type="text" id="party" placeholder="Party">
+    <button onclick="addCandidate()">Add</button>
 
-CREATE TABLE candidates (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100),
-    party VARCHAR(100),
-    votes INT DEFAULT 0
-);
+    <h2>Vote</h2>
+    <div id="candidates"></div>
 
-CREATE TABLE votes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    candidate_id INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (candidate_id) REFERENCES candidates(id) ON DELETE CASCADE
-);
-<?php
-require '../config/db.php';
-
-if($_SERVER["REQUEST_METHOD"] == "POST"){
-    $name = $_POST['name'];
-    $email = $_POST['email'];
-    $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
-
-    $stmt = $conn->prepare("INSERT INTO users(name,email,password) VALUES(?,?,?)");
-    $stmt->execute([$name,$email,$password]);
-
-    header("Location: login.php");
-}
-?>
-
-<form method="POST">
-<input name="name" placeholder="Name" required>
-<input name="email" type="email" required>
-<input name="password" type="password" required>
-<button>Register</button>
-</form>
-<?php
-session_start();
-require '../config/db.php';
-
-if($_SERVER["REQUEST_METHOD"] == "POST"){
-    $stmt = $conn->prepare("SELECT * FROM users WHERE email=?");
-    $stmt->execute([$_POST['email']]);
-    $user = $stmt->fetch();
-
-    if($user && password_verify($_POST['password'],$user['password'])){
-        $_SESSION['user'] = $user;
-        header("Location: vote.php");
-    } else {
-        echo "Invalid credentials";
-    }
-}
-?>
-
-<form method="POST">
-<input name="email" type="email" required>
-<input name="password" type="password" required>
-<button>Login</button>
-</form>
-<?php
-session_start();
-require '../config/db.php';
-
-if(!isset($_SESSION['user'])){
-    header("Location: login.php");
+    <h2>Results</h2>
+    <div id="results"></div>
+  </div>
+    body {
+  font-family: Arial;
+  background: #f4f4f4;
+  text-align: center;
 }
 
-$user = $_SESSION['user'];
-
-$stmt = $conn->prepare("SELECT has_voted FROM users WHERE id=?");
-$stmt->execute([$user['id']]);
-$status = $stmt->fetch();
-
-if($status['has_voted']){
-    die("Already voted!");
+.container {
+  background: white;
+  padding: 20px;
+  width: 300px;
+  margin: auto;
+  border-radius: 10px;
 }
 
-$candidates = $conn->query("SELECT * FROM candidates");
-?>
-
-<form method="POST">
-<?php foreach($candidates as $c): ?>
-<input type="radio" name="candidate" value="<?= $c['id'] ?>" required>
-<?= $c['name'] ?> (<?= $c['party'] ?>)<br>
-<?php endforeach; ?>
-<button name="vote">Vote</button>
-</form>
-
-<?php
-if(isset($_POST['vote'])){
-    $cid = $_POST['candidate'];
-
-    $conn->beginTransaction();
-
-    $stmt = $conn->prepare("INSERT INTO votes(user_id,candidate_id) VALUES(?,?)");
-    $stmt->execute([$user['id'],$cid]);
-
-    $stmt = $conn->prepare("UPDATE candidates SET votes=votes+1 WHERE id=?");
-    $stmt->execute([$cid]);
-
-    $stmt = $conn->prepare("UPDATE users SET has_voted=1 WHERE id=?");
-    $stmt->execute([$user['id']]);
-
-    $conn->commit();
-
-    echo "Vote success!";
+input {
+  display: block;
+  margin: 10px auto;
+  padding: 8px;
+  width: 90%;
 }
-?>
-<?php
-require '../config/db.php';
 
-$result = $conn->query("SELECT * FROM candidates ORDER BY votes DESC");
-
-foreach($result as $row){
-    echo $row['name']." - ".$row['votes']."<br>";
+button {
+  padding: 10px;
+  margin: 5px;
+  cursor: pointer;
 }
-?>
-<?php
-require '../config/db.php';
 
-if($_SERVER['REQUEST_METHOD']=="POST"){
-    $stmt = $conn->prepare("INSERT INTO candidates(name,party) VALUES(?,?)");
-    $stmt->execute([$_POST['name'],$_POST['party']]);
+.candidate {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin: 5px;
 }
-?>
+    let candidates = JSON.parse(localStorage.getItem("candidates")) || [];
+let voted = localStorage.getItem("voted") || false;
 
-<form method="POST">
-<input name="name" placeholder="Candidate Name" required>
-<input name="party" placeholder="Party" required>
-<button>Add Candidate</button>
-</form>
-# Online Voting System
+function saveData() {
+  localStorage.setItem("candidates", JSON.stringify(candidates));
+}
 
-A secure web-based voting system built using PHP and MySQL.
+function addCandidate() {
+  const name = document.getElementById("name").value;
+  const party = document.getElementById("party").value;
 
-## Features
-- User Registration & Login
-- One Person One Vote
-- Admin Panel
-- Real-time Results
+  if (!name || !party) {
+    alert("Enter all fields");
+    return;
+  }
 
-## Tech Stack
-- PHP (PDO)
-- MySQL
-- HTML/CSS
+  candidates.push({ name, party, votes: 0 });
+  saveData();
+  displayCandidates();
+  displayResults();
+}
 
-## Setup
-1. Import sql/database.sql
-2. Configure config/db.php
-3. Run on XAMPP
+function vote(index) {
+  if (voted === "true") {
+    alert("You already voted!");
+    return;
+  }
 
-## Security
-- Password Hashing
-- SQL Injection Prevention
-- Transaction-safe voting
-/config/db.php
-/vendor
-.env
+  candidates[index].votes++;
+  voted = "true";
+  localStorage.setItem("voted", "true");
+
+  saveData();
+  displayResults();
+  displayCandidates();
+}
+
+function displayCandidates() {
+  const div = document.getElementById("candidates");
+  div.innerHTML = "";
+
+  candidates.forEach((c, i) => {
+    div.innerHTML += `
+      <div class="candidate">
+        <h3>${c.name}</h3>
+        <p>${c.party}</p>
+        <button onclick="vote(${i})">Vote</button>
+      </div>
+    `;
+  });
+}
+
+function displayResults() {
+  const div = document.getElementById("results");
+  div.innerHTML = "";
+
+  candidates.forEach(c => {
+    div.innerHTML += <p>${c.name}: ${c.votes} votes</p>;
+  });
+}
+
+displayCandidates();
+displayResults();
+
+  <script src="script.js"></script>
+</body>
+</html>
