@@ -36,25 +36,8 @@ button {
   margin: 5px;
 }
     </style>
-</head>
-<body>
-
-  <h1>Online Voting System</h1>
-
-  <div class="container">
-    <h2>Add Candidate</h2>
-    <input type="text" id="name" placeholder="Candidate Name">
-    <input type="text" id="party" placeholder="Party">
-    <button onclick="addCandidate()">Add</button>
-
-    <h2>Vote</h2>
-    <div id="candidates"></div>
-
-    <h2>Results</h2>
-    <div id="results"></div>
-  </div>
- 
-    let candidates = JSON.parse(localStorage.getItem("candidates")) || [];
+  <script>
+      let candidates = JSON.parse(localStorage.getItem("candidates")) || [];
 let voted = localStorage.getItem("voted") || false;
 
 function saveData() {
@@ -118,6 +101,24 @@ function displayResults() {
 displayCandidates();
 displayResults();
 
-  <script src="script.js"></script>
+  </script>
+</head>
+<body>
+
+  <h1>Online Voting System</h1>
+
+  <div class="container">
+    <h2>Add Candidate</h2>
+    <input type="text" id="name" placeholder="Candidate Name">
+    <input type="text" id="party" placeholder="Party">
+    <button onclick="addCandidate()">Add</button>
+
+    <h2>Vote</h2>
+    <div id="candidates"></div>
+
+    <h2>Results</h2>
+    <div id="results"></div>
+  </div>
+
 </body>
 </html>
